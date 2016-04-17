@@ -13,6 +13,18 @@ start:
 	ldi r16, 0b11111111
 	out ddrb, r16
 
+	; setting port C bit 0 for output (GND)
+	; settting port C bit 1 for output (VCC)
+	; settting port C bit 2 for input (button) 
+	ldi r16, 0b00000011
+	out ddrc, r16
+
+	; setting port C bit 0 to 0 (GND)
+	; setting port C bit 1 to 1 (VCC)
+	; setting port C bit 1 to 1 (pull-up)
+	ldi r16, 0b00000110
+	out portc, r16
+
 loop:
 
 	rcall delay
@@ -26,6 +38,11 @@ loop:
 
 	out portb, r16
 
+	; checking if button is pressed
+	in r16, pinc
+	sbrs r16, 2
+	rjmp loop
+
 	; increasing counter at 100h
 	lds r16, 0x0100
 	inc r16
@@ -38,7 +55,7 @@ loop:
 
 delay:
 	ldi r17, 0x00
-	ldi r18, 0x40
+	ldi r18, 0x04
       
 delay_loop: 
 	dec	r17		
