@@ -2,6 +2,16 @@
 
 ; Author : Sebastian Celejewski
 
+; Port configuration
+; 
+; PD7, PD6, PD5, PD4 - stepper engine data output
+; PD1, PD0, PC5, PC4 - stepper engine address output
+; PC3 - stepper engine GND
+; 
+; PC2, PC1, PC3, PB5, PB4, PB3, PB2, PB1 - controller data input
+; PB0 - controller Vcc
+; GND - controller GND
+
 start:
 
 	; Setting up stack
@@ -10,27 +20,26 @@ start:
 	ldi R16, high(RAMEND)
 	out SPH, R16
 
-	; Stepper engine controller configuration
+	; Setting ports direction
+	ldi r16, 0b11110011
+	out ddrd, r16
 
-	; setting all port B bits to output
-	ldi r16, 0b11111111
-	out ddrb, r16
-
-	; Button controller configuration
-
-	; setting port C bit 0 for output (GND)
-	; setting port C bit 1 for output (VCC)
-	; setting port C bit 2 for input (button 0 - turn head left) 
-	; setting port C bit 3 for input (button 1 - turn head right)
-	ldi r16, 0b00000011
+	ldi r16, 0b00111100
 	out ddrc, r16
 
-	; setting port C bit 0 to 0 (GND)
-	; setting port C bit 1 to 1 (VCC)
-	; setting port C bit 2 to 1 (pull-up for button 0 - turn head left)
-	; setting port C bit 3 to 1 (pull-up for button 1 - turn head right)
-	ldi r16, 0b00001110
+	ldi r16, 0b00000001
+	out ddrb, r16
+
+	; setting power
+	; setting port C bit 3 to 0 (GND for flip-flops)
+	; setting port C bits 0..2 to 1 (pull-up for controller buttons)
+	ldi r16, 0b00000111
 	out portc, r16
+	
+	; setting port B bits 1..5 to 1 (pull-up for controller buttons)
+	; setting port B bit 0 to 1 (Vcc for controller buttons)
+	ldi r16, 0b00111111
+	out portb, r16
 
 loop:
 
@@ -42,11 +51,11 @@ loop:
 	lds r17, 0x0100
 	add zl, r17
 	lpm r16, z
-	out portb, r16
+	out portd, r16
 
 	; checking if button 0 (turn head left) is pressed
 	in r16, pinc
-	sbrs r16, 2
+	sbrs r16, 0
 	rjmp button_0_is_not_pressed
 
 	; turning head left
@@ -61,7 +70,7 @@ loop:
 
 button_0_is_not_pressed:
 
-	sbrs r16, 3
+	sbrs r16, 1
 	rjmp button_1_is_not_pressed
 
 	; turning head right
@@ -78,7 +87,6 @@ button_1_is_not_pressed:
 
 	rjmp loop
 
-
 delay:
 	ldi r17, 0x00
 	ldi r18, 0x04
@@ -90,7 +98,7 @@ delay_loop:
 	brne delay_loop 	
 	ret
 
-steps:	.db 0b00001001, 0b00011001
-		.db 0b00001100, 0b00011100
-		.db 0b00000110, 0b00010110
-		.db 0b00000011, 0b00010011
+steps:	.db 0b10010000, 0b10010010
+		.db 0b11000000, 0b11000010
+		.db 0b01100000, 0b01100010
+		.db 0b00110000, 0b00110010
