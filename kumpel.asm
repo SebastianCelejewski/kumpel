@@ -1,5 +1,5 @@
 ; kumpel.asm
-;
+
 ; Author : Sebastian Celejewski
 
 start:
