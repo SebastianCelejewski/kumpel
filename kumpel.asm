@@ -69,12 +69,10 @@ loop:
     ; sending value with clock bit set to 0 
     lpm r16, z
     out portd, r16
-    rcall delay
 
     ; sending value with clock bit set to 1
     sbr r16, 1
     out portd, r16
-    rcall delay
 
     ; sending step data to stepper motor 2
     ldi zh, high(steps << 1)
@@ -85,12 +83,10 @@ loop:
     ; sending value with clock bit set to 0 
     lpm r16, z
     out portd, r16
-    rcall delay
 
     ; sending value with clock bit set to 1
     sbr r16, 2
     out portd, r16
-    rcall delay
 
     ; sending step data to stepper motor 3
     ldi zh, high(steps << 1)
@@ -104,7 +100,6 @@ loop:
     ldi r16, portc      ; clearing address line for motor 3
     cbr r16, 0b00100000
     out portc, r16
-    rcall delay
 
     ; sending value with clock bit set to 1
     lpm r16, z
@@ -112,6 +107,8 @@ loop:
     ldi r16, portc      ; setting address line for motor 3
     sbr r16, 0b00100000
     out portc, r16
+
+    ; Delay for stepper motors
     rcall delay
 
     ; reading buttons status
