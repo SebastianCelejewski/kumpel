@@ -43,15 +43,26 @@ start:
 
 loop:
 
-	rcall delay
 
-	; sending step data to stepper motor
+	; 0x0100 -> motor 1 pointer
+	; 0x0101 -> motor 2 pointer
+	; 0x0102 -> motor 3 pointer
+
+	; sending step data to stepper motor 1
 	ldi zh, high(steps << 1)
 	ldi zl, low(steps << 1)
 	lds r17, 0x0100
 	add zl, r17
+	
+	; sending value with clock bit set to 0	
 	lpm r16, z
 	out portd, r16
+	rcall delay
+
+	; sending value with clock bit set to 1
+	sbr r16, 1
+	out portd, r16
+	rcall delay
 
 	; checking if button 0 (turn head left) is pressed
 	in r16, pinc
@@ -62,7 +73,7 @@ loop:
 	lds r16, 0x0100
 	inc r16
 	sts 0x0100, r16
-	cpi r16, 8
+	cpi r16, 4
 	brne loop
 	ldi r16, 0
 	sts 0x0100, r16
@@ -77,7 +88,7 @@ button_0_is_not_pressed:
 	lds r16, 0x0100
 	cpi r16, 0x00
 	brne q
-	ldi r16, 8
+	ldi r16, 4
 q:
 	dec r16
 	sts 0x0100, r16
@@ -98,7 +109,6 @@ delay_loop:
 	brne delay_loop 	
 	ret
 
-steps:	.db 0b10010000, 0b10010010
-		.db 0b11000000, 0b11000010
-		.db 0b01100000, 0b01100010
-		.db 0b00110000, 0b00110010
+steps:
+	.db 0b10010000, 0b11000000
+	.db 0b01100000, 0b00110000
