@@ -50,6 +50,10 @@ start:
     ldi r16, 0
     sts 0x0101, r16
 
+    ; setting step for motor 3 to 0
+    ldi r16, 0
+    sts 0x0102, r16
+
 loop:
 
     ; 0x0100 -> motor 1 pointer
@@ -88,6 +92,28 @@ loop:
     out portd, r16
     rcall delay
 
+    ; sending step data to stepper motor 3
+    ldi zh, high(steps << 1)
+    ldi zl, low(steps << 1)
+    lds r17, 0x0102
+    add zl, r17
+
+    ; sending value with clock bit set to 0 
+    lpm r16, z
+    out portd, r16      ; sending data
+    ldi r16, portc      ; clearing address line for motor 3
+    cbr r16, 0b00100000
+    out portc, r16
+    rcall delay
+
+    ; sending value with clock bit set to 1
+    lpm r16, z
+    out portd, r16      ; sending data
+    ldi r16, portc      ; setting address line for motor 3
+    sbr r16, 0b00100000
+    out portc, r16
+    rcall delay
+
     ; reading buttons status
     in r16, pinb  ; button lines D0..D4 are loaded into bits 1..5, bits 0, 6, and 7 are unknown
     ldi r18, 0b00111110 ;
@@ -111,13 +137,19 @@ loop:
     sbrc r16, 1
     rcall engine_1_up
 
-    sbrc r16, 4
+    sbrc r16, 2
     rcall engine_2_down
 
-    sbrc r16, 5
+    sbrc r16, 3
     rcall engine_2_up
 
-     rjmp loop
+    sbrc r16, 4
+    rcall engine_3_down
+
+    sbrc r16, 5
+    rcall engine_3_up
+
+    rjmp loop
 
 engine_1_up:
     push r16
@@ -166,6 +198,31 @@ engine_2_down:
 engine_2_step_reset:
     dec r16
     sts 0x0101, r16
+    pop r16
+    ret
+
+engine_3_up:
+    push r16
+    lds r16, 0x0102
+    inc r16
+    sts 0x0102, r16
+    cpi r16, 4
+    brne engine_3_return
+    ldi r16, 0
+    sts 0x0102, r16
+engine_3_return:
+    pop r16
+    ret
+
+engine_3_down:
+    push r16
+    lds r16, 0x0102
+    cpi r16, 0x00
+    brne engine_3_step_reset
+    ldi r16, 4
+engine_3_step_reset:
+    dec r16
+    sts 0x0102, r16
     pop r16
     ret
 
