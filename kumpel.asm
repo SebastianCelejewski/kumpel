@@ -64,12 +64,29 @@ loop:
 	out portd, r16
 	rcall delay
 
-	; checking if button 0 (turn head left) is pressed
-	in r16, pinc
-	sbrs r16, 0
-	rjmp button_0_is_not_pressed
+	; reading buttons status
+	in r16, pinb	; button lines D0..D4 are loaded into bits 1..5
+	lsr r16			; now button lines D0..D4 are loaded into bits 0..4
+	in r17, pinc	; button lines D5..D7 are loaded into bits 0..2
+	lsl r17
+	lsl r17
+	lsl r17
+	lsl r17
+	lsl r17			; button lines D5..D7 are loaded into bits 5..7
+	add r16, r17	; button lines D0..D7 are loaded into bits 0..7
 
-	; turning head left
+	; performing actions based on which buttons are pressed
+
+	sbrc r16, 0
+	rcall engine_1_up
+
+	sbrc r16, 1
+	rcall engine_1_down
+
+	rjmp loop
+
+
+engine_1_up:
 	lds r16, 0x0100
 	inc r16
 	sts 0x0100, r16
@@ -77,14 +94,9 @@ loop:
 	brne loop
 	ldi r16, 0
 	sts 0x0100, r16
-	rjmp loop
+	ret
 
-button_0_is_not_pressed:
-
-	sbrs r16, 1
-	rjmp button_1_is_not_pressed
-
-	; turning head right
+engine_1_down:
 	lds r16, 0x0100
 	cpi r16, 0x00
 	brne q
@@ -92,11 +104,7 @@ button_0_is_not_pressed:
 q:
 	dec r16
 	sts 0x0100, r16
-	rjmp loop
-
-button_1_is_not_pressed:
-
-	rjmp loop
+	ret
 
 delay:
 	ldi r17, 0x00
