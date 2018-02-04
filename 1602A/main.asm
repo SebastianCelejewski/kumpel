@@ -208,5 +208,5 @@ write_letter:
 	rjmp write_text
 
 text:
-.db "Jestem hardcorem!"
+.db "1602A is tamed"
 .db 0
