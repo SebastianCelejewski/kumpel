@@ -24,6 +24,8 @@
 ; D4 - A (backlight 5V)
 ; D5 - K (backlight 0V)
 
+.org 0x0000
+
 start:
 
 	ldi r16, low(RAMEND)
@@ -66,14 +68,26 @@ start:
 	ldi r16, 0b00010000
 	out portd, r16
 
-	ldi r16, 0b00000001 ; clear display
-	rcall send_command
+	rcall delay_long
 
 	ldi r16, 0b00001100 ; display on
 	rcall send_command
 
-	ldi zh, high(text << 1)
-	ldi zl, low(text << 1)
+	ldi r16, 0b00111111 ; two rows, 8bit, big font
+	rcall send_command 
+
+	ldi r16, 0b00000001 ; clear display
+	rcall send_command
+
+	ldi zh, high(text_first_line << 1)
+	ldi zl, low(text_first_line << 1)
+	rcall write_text
+
+	ldi r16, 0b11000000 ; point cursor to the second row
+	rcall send_command
+
+	ldi zh, high(text_second_line << 1)
+	ldi zl, low(text_second_line << 1)
 	rcall write_text
 
 end:
@@ -152,21 +166,17 @@ outer_loop:
 	ret
 
 delay_short:
-	push r24
-	push r25
 	ldi r24, low(3037)
 	ldi r25, high(3037)
 	delay_loop:
 	adiw r24, 1
 	brne delay_loop
-	pop r25
-	pop r24
 	ret
 
 delay_write:
 	push r16
 	push r17
-	ldi r16, 0x01
+	ldi r16, 0x03
 	ldi r17, 0x00
 dw1:
 	dec r17
@@ -175,24 +185,6 @@ dw1:
 	brne dw1
 	pop r16
 	pop r17
-	ret
-
-blink:
-	cbi PortD, 4
-	rcall delay_short
-	sbi PortD, 4
-	rcall delay_long
-	ret
-
-double_blink:
-	cbi PortD, 4
-	rcall delay_short
-	sbi PortD, 4
-	rcall delay_short
-	cbi PortD, 4
-	rcall delay_short
-	sbi PortD, 4
-	rcall delay_long
 	ret
 
 ; z: address of a zero-ended text
@@ -207,6 +199,10 @@ write_letter:
 	inc zl
 	rjmp write_text
 
-text:
+text_first_line:
 .db "1602A is tamed"
-.db 0
+.db 0,0
+
+text_second_line:
+.db "Second line"
+.db 0, 0
