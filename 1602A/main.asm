@@ -2,7 +2,7 @@
 ; 1602A.asm
 ;
 ; Created: 2017-10-09 21:57:24
-; Author : Sebastian
+; Author : Sebastian Celejewski
 
 ; Pin assignment
 ; B0 - Vss (power 0V)
@@ -56,28 +56,25 @@ start:
     ldi r16, 0b00000010
 	out portb, r16
 
-	; Initial setting for data bits and backlight
+	; Initial setting for data bits
 	ldi r16, 0b00000000
 	out portc, r16
 
-	// pd4 = 1 (backlight 5V)
+	; Initial setting for backlight
+	; bit 4 = 1 (backlight 5V)
+	; bit 5 = 0 (backlight 0V)
 	ldi r16, 0b00010000
 	out portd, r16
 
 	ldi r16, 0b00000001 ; clear display
 	rcall send_command
 
-	ldi r16, 0b00001111 ; display on
+	ldi r16, 0b00001100 ; display on
 	rcall send_command
 
-	ldi r16, 0b01000001  ; letter 'A'
-	ldi r17, 25
-loop:
-	rcall send_data
-	rcall delay_long
-	inc r16
-	dec r17
-	brne loop
+	ldi zh, high(text << 1)
+	ldi zl, low(text << 1)
+	rcall write_text
 
 end:
     rjmp end
@@ -86,18 +83,15 @@ end:
 send_command:
 	push r16
 
-	; Setting up sending command
+	; Set up for sending command
 	cbi portb, 3   ; Register Select = instruction
 	cbi portb, 4   ; Read/Write = write
 	cbi portb, 5
 	rcall delay_write
-
 	sbi portb, 5
 	rcall delay_write
 
 	; Sending command
-	pop r16
-	push r16
 	out portc, r16
 	lsr r16
 	lsr r16
@@ -109,6 +103,7 @@ send_command:
 	out portd, r16
 	rcall delay_write
 
+	; Write trigger
 	cbi portb, 5
 	rcall delay_write
 
@@ -119,14 +114,15 @@ send_command:
 send_data:
 	push r16
 
-	; Setting up sending command
+	; Set up for sending data
 	sbi portb, 3   ; Register Select = data
 	cbi portb, 4   ; Read/Write = write
+	cbi portb, 5
+	rcall delay_write
+	sbi portb, 5
+	rcall delay_write
 	
 	; Setting data
-	pop r16
-	push r16
-
 	out PortC, r16
 	lsr r16
 	lsr r16
@@ -138,8 +134,8 @@ send_data:
 	out portd, r16
 	rcall delay_write
 
-	cbi portb, 5    ; write
-	sbi portb, 5
+	; Write trigger
+	cbi portb, 5
 	rcall delay_write
 
 	pop r16
@@ -169,11 +165,16 @@ delay_short:
 
 delay_write:
 	push r16
-	ldi r16, 0xff
+	push r17
+	ldi r16, 0x01
+	ldi r17, 0x00
 dw1:
+	dec r17
+	brne dw1
 	dec r16
 	brne dw1
 	pop r16
+	pop r17
 	ret
 
 blink:
@@ -193,3 +194,19 @@ double_blink:
 	sbi PortD, 4
 	rcall delay_long
 	ret
+
+; z: address of a zero-ended text
+write_text:
+	lpm r16, z
+	cpi r16, 0
+	brne write_letter
+	ret
+	
+write_letter:
+	rcall send_data
+	inc zl
+	rjmp write_text
+
+text:
+.db "Jestem hardcorem!"
+.db 0
